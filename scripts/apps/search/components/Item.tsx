@@ -18,20 +18,10 @@ import {AuthoringWorkspaceService} from 'apps/authoring/authoring/services/Autho
 import {httpRequestJsonLocal} from 'core/helpers/network';
 
 function isButtonClicked(event): boolean {
-    const selector = 'button';
-
     // don't trigger the action if a button inside a list view is clicked
     // if an extension registers a button, it should be able to totally control it.
-    if (
-        event.target.matches(selector)
-
-        // target can be an image or an icon inside a button, so parents need to be checked too
-        || querySelectorParent(event.target, selector) != null
-    ) {
-        return true;
-    } else {
-        return false;
-    }
+    // target can be an image or an icon inside a button, so parents need to be checked too
+    return querySelectorParent(event.target, 'button', {self: true}) != null;
 }
 
 const CLICK_TIMEOUT = 300;
@@ -221,7 +211,9 @@ export class Item extends React.Component<IProps, IState> {
     }
 
     setHoverState() {
-        this.setState({hover: true});
+        if (this.state.hover !== true) {
+            this.setState({hover: true});
+        }
     }
 
     unsetHoverState() {
@@ -416,7 +408,7 @@ export class Item extends React.Component<IProps, IState> {
                         'sd-list-item-nested--collapsed': this.state.nested.length && this.state.showNested === false,
                     },
                 ),
-                onMouseEnter: getCallback(this.setHoverState),
+                onMouseOver: getCallback(this.setHoverState),
                 onMouseLeave: getCallback(this.unsetHoverState),
                 onDragStart: getCallback(this.onDragStart),
                 onClick: getCallback(this.select),

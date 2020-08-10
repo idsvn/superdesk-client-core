@@ -1,14 +1,10 @@
 import './AutofocusDirective';
-import './ThrottleDirective';
-import './DebounceDirective';
 import './SortDirective';
 import './PasswordStrengthDirective';
 import './SearchListDirective';
-import './SearchListSingleDirective';
 import './FiletypeIconDirective';
 import './CheckAllDirective';
 import './SwitchInvertedDirective';
-import './ConfirmDirective';
 import './SelectDirective';
 import './SelectPopupDirective';
 import './PermissionsDirective';
@@ -17,10 +13,12 @@ import './DroppableDirective';
 import './DraggableDirective';
 import './TypeaheadDirective';
 import './SliderDirective';
-import './UserAvatarDirective';
 import './WithParamsDirective';
 
 import {PhoneHomeModalDirective} from './PhoneHomeModalDirective';
+import {reactToAngular1} from 'superdesk-ui-framework';
+import {UserAvatar} from 'apps/users/components/UserAvatar';
+import {UserOrganisationAvatar} from 'apps/users/components/OrganisationAvatar';
 
 /**
  * @ngdoc module
@@ -32,16 +30,12 @@ import {PhoneHomeModalDirective} from './PhoneHomeModalDirective';
  */
 export default angular.module('superdesk.core.directives', [
     'superdesk.core.directives.autofocus',
-    'superdesk.core.directives.debounce',
-    'superdesk.core.directives.throttle',
     'superdesk.core.directives.sort',
     'superdesk.core.directives.passwordStrength',
     'superdesk.core.directives.searchList',
-    'superdesk.core.directives.searchListSingle',
     'superdesk.core.directives.filetypeIcon',
     'superdesk.core.directives.checkAll',
     'superdesk.core.directives.switchInverted',
-    'superdesk.core.directives.confirm',
     'superdesk.core.directives.select',
     'superdesk.core.directives.selectPopup',
     'superdesk.core.directives.permissions',
@@ -50,9 +44,16 @@ export default angular.module('superdesk.core.directives', [
     'superdesk.core.directives.droppable',
     'superdesk.core.directives.typeahead',
     'superdesk.core.directives.slider',
-    'superdesk.core.directives.avatar',
     'superdesk.core.directives.withParams',
 ])
 
     .directive('sdPhoneHomeModal', PhoneHomeModalDirective)
+    .component(
+        'sdUserAvatar',
+        reactToAngular1(UserAvatar, ['user', 'size', 'displayStatus', 'displayAdministratorIndicator']),
+    )
+    .component(
+        'sdOrganisationAvatar',
+        reactToAngular1(UserOrganisationAvatar, ['size']),
+    )
 ;

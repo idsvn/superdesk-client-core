@@ -4,6 +4,7 @@ import {uniq, pickBy, isEmpty, forEach} from 'lodash';
 import {validateMediaFieldsThrows} from 'apps/authoring/authoring/controllers/ChangeImageController';
 import {logger} from 'core/services/logger';
 import {gettext} from 'core/utils';
+import {getLabelNameResolver} from 'apps/workspace/helpers/getLabelForFieldId';
 
 interface IScope extends ng.IScope {
     validator: any;
@@ -21,6 +22,10 @@ interface IScope extends ng.IScope {
     successHandler?(): void;
     cancelHandler?(): void;
     getSelectedItemsLength(): number;
+    selectAll: () => void;
+    unselectAll: () => void;
+    areAllSelected: () => boolean;
+    areSomeSelected: () => boolean;
 }
 
 MultiImageEditController.$inject = [
@@ -28,6 +33,8 @@ MultiImageEditController.$inject = [
     'modal',
     'notify',
     'lock',
+    'session',
+    'content',
 ];
 
 export function MultiImageEditController(
@@ -35,12 +42,13 @@ export function MultiImageEditController(
     modal,
     notify,
     lock,
+    session,
+    content,
 ) {
     const saveHandler = $scope.saveHandler;
-
-    $scope.images = angular.copy($scope.imagesOriginal);
-
     let unsavedChangesExist = false;
+
+    $scope.images = [];
 
     $scope.$watch('imagesOriginal', (imagesOriginal: Array<any>) => {
         // add and remove images without losing metadata of the ones which stay
@@ -59,23 +67,43 @@ export function MultiImageEditController(
 
     $scope.isDirty = () => unsavedChangesExist;
 
-    $scope.selectImage = (image, update: boolean = true) => {
+    $scope.selectAll = () => {
+        if (Array.isArray($scope.images)) {
+            $scope.images.forEach((image) => {
+                image.selected = true;
+            });
+        }
+    };
+
+    $scope.unselectAll = () => {
+        if (Array.isArray($scope.images)) {
+            $scope.images.forEach((image) => {
+                image.selected = false;
+            });
+        }
+    };
+
+    $scope.areAllSelected = () =>
+        Array.isArray($scope.images) && $scope.images.every((image) => image.selected === true);
+
+    $scope.areSomeSelected = () =>
+        Array.isArray($scope.images) && $scope.images.some((image) => image.selected === true);
+
+    $scope.selectImage = (image) => {
         if ($scope.images.length === 1) {
             $scope.images[0].selected = true;
         } else {
             image.selected = !image.selected;
         }
 
-        if (update) {
-            // refresh metadata visible in the editor according to selected images
-            updateMetadata();
-        }
+        // refresh metadata visible in the editor according to selected images
+        updateMetadata();
     };
 
     // wait for images for initial load
     $scope.$watch('images', (images: Array<any>) => {
         if (images != null && images.length) {
-            images.forEach((image) => $scope.selectImage(image, false));
+            $scope.selectAll();
             updateMetadata();
         }
     });
@@ -95,10 +123,16 @@ export function MultiImageEditController(
 
         $scope.images.forEach((item) => {
             if (item.selected) {
-                item[field] = $scope.metadata[field] || '';
+                item[field] = $scope.metadata[field];
             }
         });
     };
+
+    let getLabelForFieldId = (id) => id;
+
+    getLabelNameResolver().then((_getLabelForFieldId) => {
+        getLabelForFieldId = _getLabelForFieldId;
+    });
 
     $scope.save = (close) => {
         const imagesForSaving = angular.copy($scope.images);
@@ -109,7 +143,11 @@ export function MultiImageEditController(
 
         try {
             imagesForSaving.forEach((metadata) => {
-                validateMediaFieldsThrows($scope.validator, metadata);
+                validateMediaFieldsThrows(
+                    $scope.validator,
+                    metadata,
+                    content.schema({}, 'picture'),
+                    getLabelForFieldId);
             });
         } catch (e) {
             notify.error(e);
@@ -147,6 +185,10 @@ export function MultiImageEditController(
 
     $scope.$on('item:lock', (_e, data) => {
         const {imagesOriginal} = $scope;
+
+        if (data.lock_session === session.sessionId) {
+            return; // ignore locking in the session (from this modal)
+        }
 
         // while editing metadata if any selected item is unlocked by another user remove that item from selected items
         if (Array.isArray(imagesOriginal) && data != null && data.item != null) {
@@ -186,6 +228,7 @@ export function MultiImageEditController(
             // subject is required to "usage terms" and other custom fields are editable
             subject: compare('subject'),
             headline: compare('headline'),
+            slugline: compare('slugline'),
             description_text: compare('description_text'),
             archive_description: compare('archive_description'),
             alt_text: compare('alt_text'),
@@ -196,6 +239,8 @@ export function MultiImageEditController(
             extra: compareExtra(),
             language: compare('language'),
             creditline: compare('creditline'),
+            source: compare('source'),
+            ednote: compare('ednote'),
         };
     }
 
@@ -224,8 +269,7 @@ export function MultiImageEditController(
             if (item.extra != null) {
                 for (const field in item.extra) {
                     if (!values.hasOwnProperty(field)) {
-                        values[field] = getUniqueValues('extra.' + field);
-                        extra[field] = getMetaValue(field, values[field]);
+                        setExtra(field, values, extra);
                     }
                 }
             }
@@ -234,13 +278,21 @@ export function MultiImageEditController(
         return extra;
     }
 
+    function setExtra(field, values, extra) {
+        values[field] = getUniqueValues('extra.' + field);
+
+        if (values[field].length === 1) {
+            extra[field] = getMetaValue(field, values[field], null);
+        } else {
+            $scope.placeholder[field] = gettext('(multiple values)');
+        }
+    }
+
     function getMetaValue(field: string, uniqueValues: Array<string>, defaultValue = null) {
         $scope.placeholder[field] = '';
 
         if (uniqueValues.length === 1) {
             return JSON.parse(uniqueValues[0]);
-        } else if (uniqueValues.length > 1) {
-            $scope.placeholder[field] = gettext('(multiple values)');
         }
 
         return defaultValue || '';
@@ -250,7 +302,11 @@ export function MultiImageEditController(
         const uniqueValues = getUniqueValues(fieldName);
         const defaultValues = {subject: []};
 
-        return getMetaValue(fieldName, uniqueValues, defaultValues[fieldName]);
+        if (uniqueValues.length === 1 || defaultValues) {
+            return getMetaValue(fieldName, uniqueValues, defaultValues[fieldName]);
+        } else {
+            $scope.placeholder[fieldName] = gettext('(multiple values)');
+        }
     }
 }
 

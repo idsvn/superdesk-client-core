@@ -1,13 +1,13 @@
 import {
-    PARAMETERS,
-    EXCLUDE_FACETS,
+    getParameters,
+    getExcludeFacets,
     CORE_PROJECTED_FIELDS,
     UI_PROJECTED_FIELD_MAPPINGS,
     DEFAULT_LIST_CONFIG,
 } from 'apps/search/constants';
 
 import _ from 'lodash';
-import {getDateFilters, dateRangesByKey} from '../directives/DateFilters';
+import {getDateFilters, getDateRangesByKey} from '../directives/DateFilters';
 import {gettext} from 'core/utils';
 import {KILLED_STATES} from 'apps/archive/constants';
 import {appConfig} from 'appConfig';
@@ -34,6 +34,16 @@ interface IQuery {
     getCriteria: (withSource: boolean) => IElasticQuery | {source: IElasticQuery};
     options: ISearchOptions;
     setOption: (key: SearchOptionsKeys, val: any) => void;
+}
+
+export interface IQueryParams {
+    /**
+     * By default there will be no spiked items which equals to 'exclude',
+     * use `include` to get spiked items together with other content or
+     * `only` to only get spiked content.
+     */
+    spike?: 'include' | 'exclude' | 'only';
+    [key: string]: string;
 }
 
 /**
@@ -77,6 +87,9 @@ SearchService.$inject = [
 ];
 export function SearchService($location, session, multi,
     preferencesService, moment, sortService) {
+    const PARAMETERS = getParameters();
+    const EXCLUDE_FACETS = getExcludeFacets();
+
     var sortOptions = [
         {field: 'versioncreated', label: gettext('Updated')},
         {field: 'firstcreated', label: gettext('Created')},
@@ -120,7 +133,7 @@ export function SearchService($location, session, multi,
     /*
      * Set filters for parameters
      */
-    function setParameters(filters, params) {
+    function setParameters(filters, params: IQueryParams) {
         const addFromDeskFilter = function(key) {
             let desk = params[key].split('-');
 
@@ -157,6 +170,9 @@ export function SearchService($location, session, multi,
 
         // set the filters for parameters defined in the parameters panel.
         _.each(PARAMETERS, (value, key) => {
+            var facetrange = {};
+            const dateRangesByKey = getDateRangesByKey();
+
             if (!params[key]) {
                 return;
             }
@@ -185,6 +201,40 @@ export function SearchService($location, session, multi,
                 break;
             case 'marked_desks':
                 filters.push({terms: {'marked_desks.desk_id': JSON.parse(params[key])}});
+                break;
+            case 'firstpublished':
+            case 'firstpublishedfrom':
+            case 'firstpublishedto':
+                var zeroHourSuffix = 'T00:00:00';
+                var midnightSuffix = 'T23:59:59';
+
+                getDateFilters().forEach((dateFilter) => {
+                    const fieldname = dateFilter.fieldname;
+                    const dateRangeKey = params[key];
+
+                    if (params[key] != null && dateRangesByKey[dateRangeKey] != null) {
+                        // handle predefined ranges
+                        facetrange[key] = dateRangesByKey[dateRangeKey].elasticSearchDateRange;
+                    } else {
+                        // handle manual ranges
+
+                        if (params[key] != null && key === fieldname + 'to') {
+                            if (facetrange[key] == null) {
+                                facetrange[key] = {};
+                            }
+                            facetrange[key].lte = formatDate(params[key], midnightSuffix);
+                        }
+                        if (params[key] != null && key === fieldname + 'from') {
+                            if (facetrange[key] == null) {
+                                facetrange[key] = {};
+                            }
+                            facetrange[key].gte = formatDate(params[key], zeroHourSuffix);
+                        }
+                    }
+                });
+                if (key) {
+                    filters.push({range: {'firstpublished': facetrange[key]}});
+                }
                 break;
             default:
                 var filter = {term: {}};
@@ -294,7 +344,7 @@ export function SearchService($location, session, multi,
     /**
      * Single query instance
      */
-    function Query(this: IQuery, _params, cvs, options: ISearchOptions) {
+    function Query(this: IQuery, _params: IQueryParams, cvs, options: ISearchOptions) {
         this.options = {
             hidePreviousVersions: false,
             ...options,
@@ -303,7 +353,7 @@ export function SearchService($location, session, multi,
         var size,
             filters = [],
             postFilters = [],
-            params: any = {},
+            params: IQueryParams = {},
             zeroHourSuffix = 'T00:00:00',
             midnightSuffix = 'T23:59:59';
 
@@ -370,6 +420,8 @@ export function SearchService($location, session, multi,
         function buildFilters(paramsObject: any, query) {
             // date filters start
             var facetrange = {};
+
+            const dateRangesByKey = getDateRangesByKey();
 
             // inject custom date field filters { fieldname: 'string(IDateRange)' }
             if (typeof paramsObject.customFields !== 'undefined') {
@@ -472,7 +524,7 @@ export function SearchService($location, session, multi,
             if (queryString) {
                 criteria.query.filtered.query = {query_string: {
                     query: queryString,
-                    lenient: false,
+                    lenient: true,
                     default_operator: 'AND',
                 }};
             }
@@ -811,11 +863,15 @@ export function SearchService($location, session, multi,
         var uiConfig = appConfig.list || DEFAULT_LIST_CONFIG;
         var uiFields: any = _.union(uiConfig.priority, uiConfig.firstLine, uiConfig.secondLine);
 
-        let projectedFields: any = [];
+        let projectedFields: Array<string> = [];
 
         uiFields.forEach((uiField) => {
             if (uiField in UI_PROJECTED_FIELD_MAPPINGS) {
-                projectedFields.push(UI_PROJECTED_FIELD_MAPPINGS[uiField]);
+                if (Array.isArray(UI_PROJECTED_FIELD_MAPPINGS[uiField])) {
+                    projectedFields.push(...UI_PROJECTED_FIELD_MAPPINGS[uiField]);
+                } else {
+                    projectedFields.push(UI_PROJECTED_FIELD_MAPPINGS[uiField]);
+                }
             }
         });
         return _.union(CORE_PROJECTED_FIELDS.fields, projectedFields);

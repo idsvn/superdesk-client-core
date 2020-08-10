@@ -9,7 +9,7 @@ $black:                 #000;
 $grayDarker:            #222;
 $grayDark:              #333;
 $gray:                  #666;
-$grayText:              #747474;
+$grayText:              #686868;
 $grayLight:             #999;
 $grayLighter:           #F5F5F5;
 $white:                 #fff;
@@ -18,7 +18,6 @@ $white:                 #fff;
 // -------------------------
 $blue:                  #5d9bc0;
 $blueDark:              #0064cd;
-$avatarBlue:            #005b7f;
 $green:                 #46a546;
 $red:                   #E51C23;
 $yellow:                #ffc40d;
@@ -28,6 +27,7 @@ $purple:                #9c5e96;
 $sd-background:         #f8f8f8;
 $sd-archived-bg:        #f1f1f1;
 $sd-text:               $grayDark;
+$sd-gray-text:          $grayText;
 $sd-blue:               #5ea9c8;
 $sd-blue-text:          #3599b6;
 $sd-hover:              #eff7fa;
@@ -153,6 +153,7 @@ $block-shadow-depth-2: 0px 1px 4px 0 rgba(0, 0, 0, 0.2);
 // Widgets
 $widget_archive:       #3f51b5;
 $widget_world-clock:   #03a9f4;
+$widget_user-activity: #7F56C9;
 $widget_ingest-stats:  #00bcd4;
 $widget_activity:      #009688;
 $widget_aggregate:     #8bc34a;
@@ -176,3 +177,7 @@ $btn-publish:              #01579b;
 $btn-publish-hover:        #012c4f;
 $btn-publish-plus:         #623b7a;
 $btn-publish-plus-hover:   #392246;
+
+// Pulsating BG
+$pulsateBG-off: rgba(255,87,34,0.1);
+$pulsateBG-on: rgba(255,87,34,0.8);

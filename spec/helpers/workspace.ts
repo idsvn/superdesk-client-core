@@ -2,6 +2,7 @@ import {content} from './content';
 import {monitoring} from './monitoring';
 import {nav, waitFor} from './utils';
 import {element, by, browser} from 'protractor';
+import {el} from 'end-to-end-testing-helpers';
 
 class Workspace {
     sideMenu: any;
@@ -52,9 +53,7 @@ class Workspace {
         };
 
         this.getCurrentDesk = function() {
-            var dropdownBtn = element(by.id('selected-desk'));
-
-            return dropdownBtn.element(by.css('[ng-if="selected.name"]')).getText();
+            return el(['monitoring--selected-desk']).getText();
         };
 
         /**
@@ -63,7 +62,7 @@ class Workspace {
          * @param {string} desk Desk or workspace name.
          */
         this.selectDesk = function(desk) {
-            var dropdownBtn = element(by.id('selected-desk')),
+            var dropdownBtn = el(['monitoring--selected-desk']),
                 dropdownMenu = element(by.id('select-desk-menu'));
 
             // open dropdown
@@ -99,7 +98,7 @@ class Workspace {
         };
 
         this.createWorkspace = function(name) {
-            var dropdownBtn = element(by.id('selected-desk'));
+            var dropdownBtn = el(['monitoring--selected-desk']);
 
             dropdownBtn.click();
 

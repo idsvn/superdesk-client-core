@@ -2,7 +2,7 @@
 
 import {element, by, browser, protractor, ElementFinder} from 'protractor';
 import {nav, waitFor, acceptConfirm} from './utils';
-import {s, ECE} from 'end-to-end-testing-helpers';
+import {s, ECE, el} from 'end-to-end-testing-helpers';
 import {multiAction} from './actions';
 
 class Monitoring {
@@ -105,7 +105,6 @@ class Monitoring {
     closeHighlightsPopup: () => void;
     checkMarkedForDesk: (desk: any, group: any, item: any) => void;
     closeMarkedForDeskPopup: () => void;
-    checkMarkedForMultiHighlight: (highlight: any, group: any, item: any) => void;
     removeFromFirstHighlight: (group: any, item: any) => void;
     removeFromFirstDesk: (group: any, item: any) => void;
     selectDesk: (desk: any) => void;
@@ -124,6 +123,7 @@ class Monitoring {
     getPackageItemLabelEntry: () => ElementFinder;
     getPackageItemLabelOption: (index: any) => ElementFinder;
     getPackageItemLabel: (index: any) => ElementFinder;
+    isGroupEmpty: (group: any) => boolean;
 
     constructor() {
         this.config = element(by.className('aggregate-settings'));
@@ -187,7 +187,7 @@ class Monitoring {
          * item of that type from group
          *
          * @param {Number} group
-         * @param {Number|Object} item
+         * @param {Number|Object|String} item
          * @return {WebElement}
          */
         this.getItem = function(group, item) {
@@ -198,13 +198,24 @@ class Monitoring {
             if (item.type) {
                 return all.filter((elem) =>
                     elem.all(by.className('filetype-icon-' + item.type)).count()).get(item.index || 0);
+            } else if (Number.isInteger(item)) {
+                return all.get(item);
+            } else { // use slugline filter
+                return all.filter((elem) =>
+                    elem.element(s(['field--slugline'])).isPresent(),
+                ).filter((elem) =>
+                    elem.element(s(['field--slugline'])).getText()
+                        .then((text) => text.toLowerCase().includes(item.toLowerCase())),
+                ).first();
             }
-
-            return all.get(item);
         };
 
         this.getGroupItems = function(group) {
             return this.getGroup(group).all(by.className('media-box'));
+        };
+
+        this.isGroupEmpty = function(group) {
+            return this.getGroupItems(group).count().then((count) => count === 0);
         };
 
         this.actionOnDeskSingleView = function() {
@@ -306,9 +317,7 @@ class Monitoring {
          * @param {string} fileType
          */
         this.filterAction = function(fileType) {
-            if (fileType === 'highlightsPackage') {
-                element(by.className('filetype-icon-highlight-pack')).click();
-            } else if (fileType === 'all') {
+            if (fileType === 'all') {
                 element(by.className('toggle-button__text--all')).click();
             } else {
                 element(by.className('filetype-icon-' + fileType)).click();
@@ -319,8 +328,11 @@ class Monitoring {
             return element(by.className('dropdown--compact-state'));
         };
 
-        this.previewAction = function(group, item) {
-            this.getItem(group, item).click();
+        this.previewAction = function(groupIndex, itemIndex) {
+            const item = this.getItem(groupIndex, itemIndex);
+
+            browser.wait(ECE.elementToBeClickable(item));
+            item.click();
             var preview = element(by.id('item-preview'));
 
             waitFor(preview);
@@ -452,8 +464,7 @@ class Monitoring {
             var itemElem = this.getSpikedItem(item);
 
             browser.actions().mouseMove(itemElem).perform();
-            itemElem.element(by.className('icon-dots-vertical')).click();
-
+            el(['context-menu-button']).click();
             var menu = element(by.css('.dropdown__menu.open'));
 
             menu.element(by.partialLinkText('Unspike')).click();
@@ -724,10 +735,12 @@ class Monitoring {
         this.checkMarkedForHighlight = function(highlight, group, item) {
             var crtItem = this.getItem(group, item);
 
-            crtItem.element(by.className('icon-star')).click();
-            var highlightList = element(by.className('highlights-list-menu'));
+            el(['highlights-indicator'], null, crtItem).click();
 
-            waitFor(highlightList);
+            var highlightList = el(['highlights-list']);
+
+            browser.wait(ECE.presenceOf(highlightList));
+
             expect(highlightList.getText()).toContain(highlight);
         };
 
@@ -766,24 +779,6 @@ class Monitoring {
         };
 
         /**
-         * Check if on monitoring view an item from group is marked for highlight
-         * @param {string} highlight
-         * @param {number} group
-         * @param {number} item
-         */
-        this.checkMarkedForMultiHighlight = function(highlight, group, item) {
-            var crtItem = this.getItem(group, item);
-            var star = crtItem.element(by.className('icon-multi-star'));
-
-            expect(star.isPresent()).toBe(true);
-            star.click();
-            var highlightList = element(by.className('highlights-list-menu'));
-
-            waitFor(highlightList);
-            expect(highlightList.getText()).toContain(highlight);
-        };
-
-        /**
          * Remove from the first highlight in the list
          * @param {number} group
          * @param {number} item
@@ -819,7 +814,7 @@ class Monitoring {
          * @param {string} desk Desk or workspace name.
          */
         this.selectDesk = function(desk) {
-            var dropdownBtn = element(by.id('selected-desk')),
+            var dropdownBtn = el(['monitoring--selected-desk']),
                 dropdownMenu = element(by.id('select-desk-menu'));
 
             // open dropdown

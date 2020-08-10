@@ -44,7 +44,6 @@ angular.module('superdesk.apps.archive.directives', [
     .directive('sdItemRendition', directive.ItemRendition)
     .directive('sdRatioCalc', directive.RatioCalc)
     .directive('sdHtmlPreview', directive.HtmlPreview)
-    .directive('sdProviderMenu', directive.ProviderMenu)
     .directive('sdContentResults', directive.ContentResults)
     .directive('sdArchivedItemKill', directive.ArchivedItemKill)
     .directive('sdResendItem', directive.ResendItem)
@@ -160,7 +159,6 @@ angular.module('superdesk.apps.archive', [
                 controller: ctrl.DuplicateController,
                 filters: [
                     {action: 'list', type: 'archive'},
-                    {action: 'list', type: 'archived'},
                 ],
                 keyboardShortcut: 'ctrl+alt+d',
                 privileges: {duplicate: 1},
@@ -193,7 +191,7 @@ angular.module('superdesk.apps.archive', [
                 },
                 additionalCondition: ['authoring', 'item', function(authoring, item) {
                     return (item.state !== 'killed' || item.state !== 'recalled') &&
-                        !authoring.isContentApiItem(item) && authoring.itemActions(item).duplicate;
+                        !authoring.isContentApiItem(item) && authoring.itemActions(item).duplicateTo;
                 }],
                 group: 'duplicate',
                 groupLabel: gettext('Duplicate'),

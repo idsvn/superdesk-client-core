@@ -12,8 +12,6 @@ export {ResetPasswordDirective} from './ResetPasswordDirective';
 export {UserUniqueDirective} from './UserUniqueDirective';
 export {PasswordConfirmDirective} from './PasswordConfirmDirective';
 export {UserListDirective} from './UserListDirective';
-export {UserListItemDirective} from './UserListItemDirective';
 export {ActivityDirective} from './ActivityDirective';
-export {UserMentioDirective} from './UserMentioDirective';
 export {UserInfoDirective} from './UserInfoDirective';
 export {UserActivityDirective} from './UserActivityDirective';

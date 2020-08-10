@@ -490,7 +490,7 @@ $sfbox_mediaMaxWidth : 172px;
                 margin-top: 25px;
                 margin-left: -5px;
                 margin-right: -5px;
-                
+
                 &.padded {
                     margin-top: 45px !important;
                 }
@@ -502,12 +502,12 @@ $sfbox_mediaMaxWidth : 172px;
                 }
 
                 .social-info {
-                    position: absolute; 
+                    position: absolute;
                     bottom: 10px;
                     right: 0px;
                     margin-right: 20px;
                     span {
-                        padding-left: 10px; 
+                        padding-left: 10px;
                     }
                 }
             }
@@ -694,6 +694,9 @@ $rightfield-width:60px;
 
 .mlist-view, .compact-view {
     box-shadow: $block-shadow-depth-2;
+    &--no-shadow {
+        box-shadow: none;
+    }
     .list-item-view {
         width: 100%;
         //.box-shadow(0 1px 4px 0 rgba(0,0,0,20%));
@@ -719,6 +722,10 @@ $rightfield-width:60px;
         border-right: 2px solid #fff;
         padding-left: 40px;
         overflow: hidden;
+
+        &--no-padding {
+            padding: 0;
+        }
 
         &:hover {
             background-color: #f4f4f4 !important;
@@ -832,7 +839,6 @@ $rightfield-width:60px;
             }
         }
 
-        
         &.contacts {
             padding-left: 20px;
             .org-label {
@@ -871,7 +877,7 @@ $rightfield-width:60px;
                 padding: 0;
             }
         }
-        
+
 
         .item-info {
             padding: 10px 10px 10px 10px;
@@ -880,6 +886,9 @@ $rightfield-width:60px;
                 line-height: 18px;
                 position: relative;
                 margin-left: 38px;
+                &--no-margin {
+                    margin-left: 0;
+                }
                 display: flex;
                 box-sizing: border-box;
                 white-space: nowrap;
@@ -909,6 +918,9 @@ $rightfield-width:60px;
                 white-space: nowrap;
                 overflow: hidden;
                 text-overflow: ellipsis;
+                & + .takekey, & + .provider {
+                    margin-left: $sd-base-increment / 2;
+                }
             }
             .language-label {
                 overflow: visible;
@@ -949,6 +961,9 @@ $rightfield-width:60px;
             .highlights-box {
                 margin-top: -2px;
                 margin-right: 5px;
+                &:empty {
+                    display: contents;
+                }
             }
             .item-heading {
                 flex-grow: 1;
@@ -986,19 +1001,16 @@ $rightfield-width:60px;
                 }
             }
             .takekey {
-                color: #333;
-                margin-right: 20px;
-                float: left;
+                color: inherit;
+                margin-right: $sd-base-increment * 1.5;
             }
             .category {
                 color: #444;
-                margin-right: 10px;
-                float: left;
+                margin-right: $sd-base-increment * 1.5;
             }
             .provider {
-                color: #686b6c;
-                float: left;
-                margin-right: 10px;
+                color: #686868;
+                margin-right: $sd-base-increment * 1.5;
                 white-space: nowrap;
             }
             .expires {
@@ -1013,7 +1025,7 @@ $rightfield-width:60px;
             }
             time {
                 font-size: 11px;
-                color: $grayLight;
+                color: $sd-gray-text;
                 overflow: hidden;
                 text-overflow: ellipsis;
                 white-space: nowrap;
@@ -1026,6 +1038,11 @@ $rightfield-width:60px;
             }
             .associations {
                 position: static;
+                width: auto;
+                margin-right: $sd-base-increment;
+                i {
+                    width: 16px;
+                }
             }
             .queue-error {
                 margin-right: 5px;
