@@ -67,6 +67,7 @@ declare module 'superdesk-api' {
             articleListItemWidgets?: Array<React.ComponentType<{article: IArticle}>>;
             articleGridItemWidgets?: Array<React.ComponentType<{article: IArticle}>>;
             authoringTopbarWidgets?: Array<React.ComponentType<{article: IArticle}>>;
+            mediaActions?: Array<React.ComponentType<{article: IArticle}>>;
             pages?: Array<IPage>;
             customFieldTypes?: Array<ICustomFieldType>;
             notifications?: {
@@ -223,6 +224,9 @@ declare module 'superdesk-api' {
         // picture and video only
         width?: number;
         height?: number;
+
+        // video id, set when item is stored in video server
+        video_editor_id?: string;
     };
 
     export interface IArticle extends IBaseRestApiResponse {
@@ -410,9 +414,9 @@ declare module 'superdesk-api' {
     }
 
     export interface IDangerousArticlePatchingOptions {
-        // when this option is set, an HTTP request will be sent and item patched immediately
-        // otherwise, the patch will get applied to authoring view
-        // and will get saved together with the rest of the article changes by the user
+        // When this option is set, an HTTP request will be sent immediately
+        // even if the article is locked and is being edited.
+        // Data received from the server will overwrite values edited by a user in case of a conflict.
         patchDirectlyAndOverwriteAuthoringValues?: boolean;
     }
 
