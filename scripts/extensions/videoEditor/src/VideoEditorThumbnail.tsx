@@ -22,6 +22,12 @@ interface IState {
     scale: number;
 }
 
+interface IThumbnailCaptureParams {
+    position?: number;
+    crop?: string;
+    rotate?: number;
+}
+
 const initialState: IState = {type: null, value: 0, rotateDegree: 0, scale: 1};
 
 export class VideoEditorThumbnail extends React.Component<IProps, IState> {
@@ -45,7 +51,7 @@ export class VideoEditorThumbnail extends React.Component<IProps, IState> {
     }
 
     componentDidMount() {
-        const thumbnail = this.props.article.renditions?.thumbnail?.href;
+        const thumbnail = this.props.article.renditions?.viewImage?.href;
 
         if (thumbnail) {
             this.setThumbnail(thumbnail);
@@ -135,7 +141,7 @@ export class VideoEditorThumbnail extends React.Component<IProps, IState> {
 
         if (this.state.type === 'capture' && typeof this.state.value === 'number') {
             const crop = this.props.getCropRotate(pick(this.props.crop, ['x', 'y', 'width', 'height']));
-            const body = {
+            const body: IThumbnailCaptureParams = {
                 // Captured thumbnail from server and from canvas have small difference in time (position)
                 position: this.state.value - 0.04,
                 crop: Object.values(crop).join(','),
@@ -193,7 +199,7 @@ export class VideoEditorThumbnail extends React.Component<IProps, IState> {
                 .then((res: IVideoProject) => {
                     this.handleReset();
                     this.props.onSave(res.renditions, res._etag);
-                    this.setThumbnail(res.renditions?.thumbnail?.href ?? '');
+                    this.setThumbnail(res.renditions?.viewImage?.href ?? '');
                 })
                 .catch(this.props.onError);
         }
@@ -273,7 +279,7 @@ export class VideoEditorThumbnail extends React.Component<IProps, IState> {
             throw new Error('Could not get current canvas');
         }
         ctx.clearRect(0, 0, this.ref.current.width, this.ref.current.height);
-        const thumbnail = this.props.article.renditions?.thumbnail?.href;
+        const thumbnail = this.props.article.renditions?.viewImage?.href;
 
         if (thumbnail) {
             this.setThumbnail(thumbnail);
@@ -359,7 +365,7 @@ export class VideoEditorThumbnail extends React.Component<IProps, IState> {
                         )}
                     </div>
                 </div>
-                {!this.props.article.renditions?.thumbnail?.href && !this.state.value && (
+                {!this.props.article.renditions?.viewImage?.href && !this.state.value && (
                     <div className={getClass('thumbnail--empty')}>
                         <div className="upload__info-icon" />
                         <p className={getClass('thumbnail--empty__text')}>{gettext('No thumbnail')}</p>
